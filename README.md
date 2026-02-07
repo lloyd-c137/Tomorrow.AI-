@@ -1,104 +1,187 @@
 # Sci-Demo Hub (科学演示集市)
 
-Sci-Demo Hub 是一个双语（中/英）高端教育平台，专为交互式科学演示而设计。它具有“数字实验室”的美学风格、用于物理/数学模拟的代码沙盒以及 AI 助手框架。
+Sci-Demo Hub 是一个双语（中/英）高端教育平台，专为交互式科学演示而设计。它具有"数字实验室"的美学风格、用于物理/数学模拟的代码沙盒以及 AI 助手框架。
 
 ## 🚀 快速开始
 
-1.  **安装依赖**
-    ```bash
-    npm install
-    ```
+### 一键安装（推荐）
 
-2.  **运行开发服务器**
-    ```bash
-    npm run dev
-    ```
-
----
-
-## 🤖 AI 集成指南（如何切换到 OpenAI）
-
-目前项目在 `services/geminiService.ts` 中包含一个用于 AI 交互的占位符框架。UI 组件 (`App.tsx`) 已经配置好发送提示词和上下文到该服务并显示结果。
-
-要集成 **OpenAI (或任何兼容 OpenAI 格式的 API)**，请遵循以下步骤：
-
-### 1. 定位服务文件
-打开文件：`services/geminiService.ts`
-
-### 2. 更新实现代码
-用标准的 OpenAI `fetch` 逻辑替换 `GeminiService` 的现有内容。
-
-**将下面的代码复制并粘贴到 `services/geminiService.ts` 中：**
-
-```typescript
-// services/geminiService.ts
-
-// 注意：理想情况下，请将密钥存储在环境变量中（例如 process.env.OPENAI_API_KEY）
-const API_KEY = "sk-YOUR-OPENAI-API-KEY-HERE"; 
-const API_URL = "https://api.openai.com/v1/chat/completions";
-
-export const GeminiService = {
-  chat: async (prompt: string, context?: string): Promise<string> => {
-    
-    // 1. 根据上下文构建系统提示词 (System Prompt)
-    const systemInstruction = context 
-      ? `You are an expert science educator in the 'Sci-Demo Hub'. The user is currently viewing a demo with the following context: ${context}. Answer briefly and accurately.`
-      : `You are an expert science educator. Help users find demos, explain concepts, or write code for scientific visualizations.`;
-
-    try {
-      // 2. 调用 OpenAI API
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4o", // 或者 "gpt-3.5-turbo"
-          messages: [
-            { role: "system", content: systemInstruction },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      // 3. 返回文本内容
-      return data.choices[0]?.message?.content || "No response generated.";
-
-    } catch (error) {
-      console.error("AI Service Error:", error);
-      return "Sorry, I cannot connect to the AI service at the moment.";
-    }
-  }
-};
+```bash
+npm run setup
 ```
 
-### 3. 关键参数解释
+### 手动安装
 
-*   **`model`**: 根据您的预算或需求，更改为 `gpt-4o` 或 `gpt-3.5-turbo`。
-*   **`messages`**: OpenAI 使用消息列表结构。我们将代码中的 `context`（上下文）映射到 `system` 角色，将用户的输入映射到 `user` 角色。
-*   **`Authorization`**: 请确保您的 API Key 是有效的。
+1. **安装前端依赖**
+   ```bash
+   npm install
+   ```
 
-### 4. (可选) 使用自定义端点 (Custom Endpoint)
-如果您使用的是本地大模型（如 Ollama）或模仿 OpenAI 格式的第三方代理服务：
-1.  将 `API_URL` 更改为您的端点地址（例如 `http://localhost:11434/v1/chat/completions`）。
-2.  将 `API_KEY` 更改为代理服务所需的任何内容（如果不需要鉴权，则留空）。
+2. **安装后端依赖**
+   ```bash
+   cd backend
+   npm install
+   ```
+
+3. **初始化数据库**
+   ```bash
+   npm run init-db
+   ```
+
+### 启动开发服务器
+
+需要同时启动前端和后端：
+
+**终端 1 - 启动后端：**
+```bash
+npm run server:dev
+```
+
+**终端 2 - 启动前端：**
+```bash
+npm run dev
+```
+
+- 前端: http://localhost:5173
+- 后端 API: http://localhost:3001
 
 ---
 
-## 📂 项目结构
+## 📁 项目结构
 
-*   **`App.tsx`**: 主 UI 逻辑，处理“探索 (Explore)”、“上传 (Upload)”和“管理 (Admin)”视图之间的路由切换。
-*   **`constants.ts`**: 包含所有文本翻译 (EN/CN) 和初始演示数据 (Seed Demos)。
-*   **`services/storageService.ts`**: 处理演示数据的 LocalStorage 本地持久化。
-*   **`services/geminiService.ts`**: AI 聊天的接口文件。**(请修改此处以集成真实的 AI 能力)**。
+```
+sci-demo-hub/
+├── App.tsx                    # 主 UI 逻辑
+├── types.ts                   # TypeScript 类型定义
+├── constants.ts               # 翻译字典和种子数据
+├── services/
+│   ├── apiService.ts          # API 客户端封装
+│   ├── storageService.ts      # 数据存储服务（API 模式）
+│   └── geminiService.ts       # AI 服务接口
+├── components/
+│   ├── CategoryTreeNode.tsx   # 递归分类树
+│   ├── DemoPlayer.tsx         # 演示播放器
+│   ├── UploadWizard.tsx       # 上传向导
+│   ├── StatsCard.tsx          # 统计卡片
+│   └── Modals.tsx             # 弹窗组件
+├── backend/                   # 后端 API 服务
+│   ├── server.js              # Express 服务器入口
+│   ├── database.js            # SQLite 数据库连接
+│   ├── routes/                # API 路由
+│   │   ├── auth.js            # 认证路由
+│   │   ├── demos.js           # 演示路由
+│   │   ├── communities.js     # 社区路由
+│   │   ├── categories.js      # 分类路由
+│   │   └── bounties.js        # 悬赏路由
+│   └── scripts/
+│       └── initDb.js          # 数据库初始化脚本
+└── BACKEND_API_SPECS.md       # API 规范文档
+```
+
+---
+
+## 🗄️ 后端架构
+
+### 数据库
+- **SQLite** - 轻量级文件数据库
+- 自动创建在 `backend/data/sci_demo_hub.db`
+- 支持 WAL 模式，提高并发性能
+
+### API 端点
+所有 API 遵循 `/api/v1` 前缀，统一响应格式：
+```json
+{
+  "code": 200,
+  "message": "Success",
+  "data": { ... }
+}
+```
+
+### 数据表
+- `users` - 用户表
+- `communities` - 社区表
+- `community_members` - 社区成员关联表
+- `categories` - 分类表
+- `demos` - 演示表
+- `bounties` - 悬赏表
+
+---
+
+## 🤖 AI 集成指南
+
+### 配置环境变量
+
+复制 `.env.example` 为 `.env`：
+
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 文件，添加你的 API 密钥：
+
+```env
+# 使用 OpenAI
+OPENAI_API_KEY=sk-your-openai-key-here
+
+# 或使用 Gemini
+GEMINI_API_KEY=your-gemini-key-here
+```
+
+### 修改 AI 服务
+
+编辑 `services/geminiService.ts`，根据 README 中的指南实现具体的 AI 调用逻辑。
+
+---
+
+## 🔧 环境配置
+
+### 前端环境变量 (.env)
+```env
+VITE_API_URL=http://localhost:3001/api/v1
+```
+
+### 后端环境变量 (backend/.env)
+```env
+PORT=3001
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+```
+
+---
 
 ## 🎨 样式设计
-本项目使用 **Tailwind CSS** 进行样式设计，并使用 **Framer Motion** 制作流畅的过渡动画。设计语言遵循适合科学工具的简洁“玻璃拟态 (Glassmorphism)”风格。
+
+本项目使用 **Tailwind CSS** 进行样式设计，并使用 **Framer Motion** 制作流畅的过渡动画。设计语言遵循适合科学工具的简洁"玻璃拟态 (Glassmorphism)"风格。
+
+---
+
+## 📦 可用脚本
+
+### 根目录
+| 命令 | 说明 |
+|------|------|
+| `npm run dev` | 启动前端开发服务器 |
+| `npm run build` | 构建前端生产版本 |
+| `npm run server` | 启动后端生产服务器 |
+| `npm run server:dev` | 启动后端开发服务器（热重载） |
+| `npm run init-db` | 初始化数据库 |
+| `npm run setup` | 一键安装所有依赖并初始化数据库 |
+
+### 后端目录
+| 命令 | 说明 |
+|------|------|
+| `npm start` | 启动服务器 |
+| `npm run dev` | 开发模式（热重载） |
+| `npm run init-db` | 初始化数据库 |
+
+---
+
+## 🔐 默认账号
+
+- **管理员**: `admin` / 任意密码
+- **普通用户**: 任意用户名 / 任意密码
+
+---
+
+## 📄 许可证
+
+MIT License

@@ -1,19 +1,26 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  FolderOpen, Plus, ShieldCheck, Search, X, 
-  Sparkles, FlaskConical, Atom, Hash, Dna, Monitor, 
-  ChevronRight, Globe, Users, Trash2, Folder, 
+import {
+  FolderOpen, Plus, ShieldCheck, Search, X,
+  Sparkles, FlaskConical, Atom, Hash, Dna, Monitor,
+  ChevronRight, Globe, Users, Trash2, Folder,
   ChevronDown, Satellite, UserCircle, Briefcase, Palette, Image as ImageIcon,
   Target, Award, CheckCircle, Clock, Edit3, Save, Play, RefreshCw, Camera,
-  LogOut, LayoutDashboard, Settings, User, KeyRound, Building2, Zap
+  LogOut, LayoutDashboard, Settings, User, KeyRound, Building2, Zap, Heart,
+  HelpCircle, BookOpen, Menu, Send, MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AiChatWidget } from './components/AiChatWidget';
+import { marked } from 'marked';
 
 import { Demo, Language, UserRole, Subject, Category, Layer, Bounty, Community } from './types';
 import { DICTIONARY, getTranslation } from './constants';
 import { StorageService } from './services/storageService';
-import { GeminiService } from './services/geminiService';
+import { AiService } from './services/aiService';
+
+
+
+
 
 // Imports
 import { CategoryTreeNode } from './components/CategoryTreeNode';
@@ -21,9 +28,11 @@ import { DemoPlayer } from './components/DemoPlayer';
 import { UploadWizard } from './components/UploadWizard';
 import { StatsCard } from './components/StatsCard';
 import { CreateBountyModal, CreateCategoryModal } from './components/Modals';
+import { CommunityAdminPanel } from './components/CommunityAdminPanel';
+
+import { AuthPage } from './components/AuthPage';
 
 // --- Helpers ---
-
 const SubjectIcon = ({ subject }: { subject: string }) => {
   switch (subject) {
     case Subject.Physics: return <Atom className="w-4 h-4" />;
@@ -38,82 +47,11 @@ const SubjectIcon = ({ subject }: { subject: string }) => {
   }
 };
 
-const LoginScreen = ({ t, onLogin, lang, setLang }: { t: any, onLogin: (role: UserRole) => void, lang: Language, setLang: (l: Language) => void }) => {
-  return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden dark">
-      {/* Premium Background Ambience */}
-      <div className="absolute inset-0 bg-grid-slate opacity-[0.05]"></div>
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[150px] opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600 rounded-full mix-blend-screen filter blur-[150px] opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
-      </div>
-
-      <div className="w-full max-w-5xl z-10">
-        <div className="flex justify-between items-center mb-16">
-           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <FlaskConical className="text-white w-5 h-5" />
-             </div>
-             <h1 className="text-2xl font-bold text-white tracking-tight">Sci-Demo <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Hub</span></h1>
-           </div>
-           <button 
-              onClick={() => setLang(lang === 'en' ? 'cn' : 'en')}
-              className="text-slate-400 font-medium text-xs border border-slate-700 rounded-full px-3 py-1 hover:bg-slate-800 transition-colors"
-           >
-              {lang === 'en' ? '中文' : 'English'}
-           </button>
-        </div>
-
-        <div className="text-center mb-20">
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
-            {t('loginTitle').split(' ')[0]} <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">{t('loginTitle').split(' ').slice(1).join(' ')}</span>
-          </h2>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed font-light">{t('loginSubtitle')}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {/* User Role */}
-          <motion.div 
-            whileHover={{ y: -8 }}
-            onClick={() => onLogin('user')}
-            className="group cursor-pointer bg-slate-900/40 backdrop-blur-xl border border-slate-800 hover:border-emerald-500/50 rounded-3xl p-8 flex flex-col items-center text-center transition-all hover:bg-slate-800/60 hover:shadow-2xl hover:shadow-emerald-900/10"
-          >
-            <div className="w-20 h-20 bg-emerald-500/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-emerald-500/10">
-              <UserCircle className="w-10 h-10 text-emerald-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">{t('roleUser')}</h3>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed px-4">{t('roleUserDesc')}</p>
-            <span className="mt-auto w-full py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-medium text-sm border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-              Enter Lab
-            </span>
-          </motion.div>
-
-          {/* General Admin */}
-          <motion.div 
-             whileHover={{ y: -8 }}
-             onClick={() => onLogin('general_admin')}
-             className="group cursor-pointer bg-slate-900/40 backdrop-blur-xl border border-slate-800 hover:border-purple-500/50 rounded-3xl p-8 flex flex-col items-center text-center transition-all hover:bg-slate-800/60 hover:shadow-2xl hover:shadow-purple-900/10"
-          >
-             <div className="w-20 h-20 bg-purple-500/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-purple-500/10">
-               <ShieldCheck className="w-10 h-10 text-purple-400" />
-             </div>
-             <h3 className="text-xl font-bold text-white mb-2">{t('roleGeneralAdmin')}</h3>
-             <p className="text-slate-400 text-sm mb-8 leading-relaxed px-4">{t('roleGeneralAdminDesc')}</p>
-             <span className="mt-auto w-full py-3 rounded-xl bg-purple-500/10 text-purple-400 font-medium text-sm border border-purple-500/20 group-hover:bg-purple-500 group-hover:text-white transition-all">
-               Enter Governance
-             </span>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // --- Main App ---
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>('cn');
   const [role, setRole] = useState<UserRole>('user');
   const [currentUserId, setCurrentUserId] = useState<string>(''); // Simulated Session ID
 
@@ -127,10 +65,11 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [bounties, setBounties] = useState<Bounty[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
-  
+
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [selectedDemo, setSelectedDemo] = useState<Demo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'likes'>('date');
   
   // Modal States
   const [isBountyModalOpen, setIsBountyModalOpen] = useState(false);
@@ -140,60 +79,133 @@ export default function App() {
   const [isCreateCommModalOpen, setIsCreateCommModalOpen] = useState(false);
   const [createCommData, setCreateCommData] = useState({ name: '', desc: '' });
 
+  // Community Admin Panel State
+  const [activeCommunityAdminPanel, setActiveCommunityAdminPanel] = useState<string | null>(null);
+
   // Context for uploading to a bounty
   const [bountyContext, setBountyContext] = useState<Bounty | null>(null);
 
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Close chat when view changes
+  useEffect(() => {
+    setIsChatOpen(false);
+  }, [view, layer, activeCommunityId]);
+
   const [chatMessages, setChatMessages] = useState<{role: 'user'|'model', text: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   // Hidden File Input for cover update
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [demoIdToUpdateCover, setDemoIdToUpdateCover] = useState<string | null>(null);
 
+  // First login detection for help guide
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [showHelpTooltip, setShowHelpTooltip] = useState(false);
+
+  // Mobile sidebar toggle state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const t = (key: keyof typeof DICTIONARY['en']) => getTranslation(language, key);
 
-  // Initialize Data
   useEffect(() => {
-    refreshAllData();
+    const initAuth = async () => {
+      const storedUser = StorageService.getCurrentUser();
+      if (storedUser) {
+        setIsLoggedIn(true);
+        setRole(storedUser.role as UserRole);
+        setCurrentUserId(storedUser.id);
+        if (storedUser.role === 'general_admin') {
+           setView('admin');
+        }
+        // Check if this is the first login
+        const hasVisitedBefore = localStorage.getItem('sci_demo_visited');
+        if (!hasVisitedBefore) {
+          setIsFirstLogin(true);
+          setShowHelpTooltip(true);
+          localStorage.setItem('sci_demo_visited', 'true');
+        }
+      }
+      await refreshAllData();
+    };
+    initAuth();
   }, []);
 
-  const refreshAllData = () => {
-    StorageService.initialize();
-    setDemos([...StorageService.getAllDemos()]);
-    setCategories([...StorageService.getCategories()]);
-    setBounties([...StorageService.getBounties()]);
-    setCommunities([...StorageService.getCommunities()]);
+  const refreshAllData = async () => {
+    await StorageService.initialize();
+
+    // Load demos based on sort preference
+    let demosData: Demo[];
+    if (sortBy === 'likes') {
+      demosData = await StorageService.getDemosSortedByLikes({});
+    } else {
+      demosData = await StorageService.getAllDemos();
+    }
+
+    const [categoriesData, bountiesData, communitiesData] = await Promise.all([
+      StorageService.getCategories(),
+      StorageService.getBounties(),
+      StorageService.getCommunities()
+    ]);
+    setDemos(demosData);
+    setCategories(categoriesData);
+    setBounties(bountiesData);
+    setCommunities(communitiesData);
   };
 
-  // Initialize Chat Welcome Message when lang changes
-  useEffect(() => {
-     setChatMessages([{role: 'model', text: t('chatWelcome')}]);
-  }, [language]);
+
 
   useEffect(() => {
     setActiveCategory('All');
   }, [layer, activeCommunityId]);
 
-  const handleLogin = (selectedRole: UserRole) => {
-    setRole(selectedRole);
-    setIsLoggedIn(true);
-    setView('explore');
-    setLayer('general');
-    
-    // Simulate User IDs for logic
-    if (selectedRole === 'general_admin') {
-        setCurrentUserId('admin-001');
-    } else {
-        setCurrentUserId('user-101');
+  // Reload demos when sort preference changes
+  useEffect(() => {
+    if (isLoggedIn) {
+      refreshAllData();
+    }
+  }, [sortBy]);
+
+  const handleLogin = async (username: string, role: UserRole, isRegister?: boolean, password?: string) => {
+    try {
+      if (!password) throw new Error("Password is required");
+
+      let result;
+      if (isRegister) {
+        result = await StorageService.register(username, password);
+      } else {
+        result = await StorageService.login(username, password);
+      }
+      
+      setRole(result.user.role as UserRole);
+      setIsLoggedIn(true);
+      
+      // Redirect based on role
+      if (result.user.role === 'general_admin') {
+        setView('admin');
+        setLayer('general');
+      } else {
+        setView('explore');
+        setLayer('general');
+      }
+      
+      setCurrentUserId(result.user.id);
+      await refreshAllData();
+    } catch (error: any) {
+      console.error('Auth failed:', error);
+      throw new Error(error.message || 'Authentication failed');
     }
   };
 
+
   const handleLogout = () => {
+    StorageService.logout();
     setIsLoggedIn(false);
     setRole('user');
     setActiveCommunityId(null);
+    setCurrentUserId('');
   };
 
   // --- Derived State for Communities ---
@@ -257,9 +269,10 @@ export default function App() {
       const matchSearch = d.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           d.description.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Admin sees pending, users only published (unless it's their own or they are comm admin)
+      // Admin sees pending, users see published + their own pending demos
       if (view === 'explore') {
-          return matchCategory && matchSearch && d.status === 'published';
+          const isVisible = d.status === 'published' || (d.author === currentUserId && d.status === 'pending');
+          return matchCategory && matchSearch && isVisible;
       }
       return matchCategory && matchSearch;
     });
@@ -278,45 +291,54 @@ export default function App() {
   }, [demos, role, activeCommunityId, isCurrentCommunityAdmin]);
 
   // Actions
-  const handleUpload = (newDemo: Demo) => {
-    StorageService.saveDemo(newDemo);
-    refreshAllData();
+  const handleUpload = async (newDemo: Demo) => {
+    await StorageService.saveDemo(newDemo);
+    await refreshAllData();
     setView('explore');
     setBountyContext(null);
-    alert(t('successMsg'));
+    alert(t('uploadSuccessMsg'));
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    setActiveCategory(categoryId);
+    if (view !== 'explore') {
+      setView('explore');
+    }
   };
 
   const openCategoryModal = (parentId: string | null) => {
     setCategoryModal({ isOpen: true, parentId });
   };
 
-  const handleAddCategory = (name: string, parentId: string | null) => {
+  const handleAddCategory = async (name: string, parentId: string | null) => {
     // Attach community ID if in community layer
     const commId = layer === 'community' ? activeCommunityId : undefined;
-    StorageService.addCategory(name, parentId, commId || undefined);
-    refreshAllData();
+    await StorageService.addCategory(name, parentId, commId || undefined);
+    await refreshAllData();
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
     if (window.confirm(t('confirmDeleteCat'))) {
-      StorageService.deleteCategory(id);
-      refreshAllData(); // Force global refresh
+      await StorageService.deleteCategory(id);
+      await refreshAllData();
       setActiveCategory('All');
     }
   };
 
-  const handleApprove = (id: string) => {
-    StorageService.updateDemoStatus(id, 'published');
-    refreshAllData();
+  const handleApprove = async (id: string) => {
+    await StorageService.updateDemoStatus(id, 'published');
+    await refreshAllData();
   };
 
-  const handleReject = (id: string) => {
-    StorageService.updateDemoStatus(id, 'rejected', 'Does not meet safety standards.');
-    refreshAllData();
+  const handleReject = async (id: string) => {
+    const reason = window.prompt(t('enterRejectionReason'), t('defaultRejectionReason'));
+    if (reason === null) return; // User cancelled
+    await StorageService.updateDemoStatus(id, 'rejected', reason);
+    await refreshAllData();
   };
   
-  const handleCreateBounty = (data: {title: string, desc: string, reward: string}) => {
-    StorageService.addBounty({
+  const handleCreateBounty = async (data: {title: string, desc: string, reward: string}) => {
+    await StorageService.addBounty({
       id: `b-${Date.now()}`,
       title: data.title, 
       description: data.desc, 
@@ -327,39 +349,39 @@ export default function App() {
       creator: currentUserId, 
       createdAt: Date.now()
     });
-    refreshAllData();
+    await refreshAllData();
   };
 
-  const handleDeleteBounty = (id: string) => {
+  const handleDeleteBounty = async (id: string) => {
     if(window.confirm(t('confirmDeleteBounty'))) {
-      StorageService.deleteBounty(id);
-      refreshAllData();
+      await StorageService.deleteBounty(id);
+      await refreshAllData();
     }
   }
 
-  const handleDeleteDemo = (id: string) => {
+  const handleDeleteDemo = async (id: string) => {
     if(window.confirm(t('confirmDeleteDemo'))) {
-      StorageService.deleteDemo(id);
-      refreshAllData();
+      await StorageService.deleteDemo(id);
+      await refreshAllData();
       setSelectedDemo(null);
     }
   }
 
   // --- Community Actions ---
 
-  const handleCreateCommunity = () => {
-      StorageService.createCommunity(createCommData.name, createCommData.desc, currentUserId);
+  const handleCreateCommunity = async () => {
+      await StorageService.createCommunity(createCommData.name, createCommData.desc, currentUserId);
       setCreateCommData({name: '', desc: ''});
       setIsCreateCommModalOpen(false);
-      refreshAllData();
+      await refreshAllData();
       alert("Community request sent for approval.");
   };
 
-  const handleJoinByCode = () => {
-      const success = StorageService.joinCommunityByCode(joinCode, currentUserId);
+  const handleJoinByCode = async () => {
+      const success = await StorageService.joinCommunityByCode(joinCode, currentUserId);
       if(success) {
           alert(t('successMsg'));
-          refreshAllData();
+          await refreshAllData();
           setIsJoinCodeModalOpen(false);
           setJoinCode('');
       } else {
@@ -367,49 +389,82 @@ export default function App() {
       }
   };
 
-  const handleRequestJoin = (commId: string) => {
-      StorageService.joinCommunityRequest(commId, currentUserId);
-      refreshAllData();
+  const handleRequestJoin = async (commId: string) => {
+      await StorageService.joinCommunityRequest(commId, currentUserId);
+      await refreshAllData();
       alert("Request sent.");
   };
 
-  const handleApproveCommunity = (id: string) => {
-      StorageService.approveCommunity(id);
-      refreshAllData();
+  const handleApproveCommunity = async (id: string) => {
+      await StorageService.approveCommunity(id);
+      await refreshAllData();
   };
 
-  const handleRejectCommunity = (id: string) => {
-      StorageService.rejectCommunity(id);
-      refreshAllData();
+  const handleRejectCommunity = async (id: string) => {
+      await StorageService.rejectCommunity(id);
+      await refreshAllData();
   };
 
-  const handleManageMember = (commId: string, memberId: string, action: 'accept' | 'kick') => {
-      StorageService.manageMember(commId, memberId, action);
-      refreshAllData();
+  const handleManageMember = async (commId: string, memberId: string, action: 'accept' | 'kick' | 'reject_request') => {
+      try {
+        await StorageService.manageMember(commId, memberId, action);
+        await refreshAllData();
+        if (action === 'accept') {
+          alert(t('successMsg'));
+        }
+      } catch (error: any) {
+        console.error('Manage member error:', error);
+        alert(`${t('aiError')} (${error.message})`);
+      }
   };
 
-  const handleUpdateCommCode = (commId: string) => {
+  const handleUpdateCommCode = async (commId: string) => {
       const newCode = prompt("Enter new 12-digit code:");
       if(newCode && newCode.length === 12) {
-          StorageService.updateCommunityCode(commId, newCode);
-          refreshAllData();
+          await StorageService.updateCommunityCode(commId, newCode);
+          await refreshAllData();
       } else if (newCode) {
           alert("Code must be 12 digits.");
       }
   };
 
-
-  const handleAiSend = async () => {
-    if (!chatInput.trim()) return;
-    const userMsg = chatInput;
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
-    setChatInput('');
-    setIsAiLoading(true);
-
-    const response = await GeminiService.chat(userMsg);
-    setChatMessages(prev => [...prev, { role: 'model', text: response }]);
-    setIsAiLoading(false);
+  // Handle community update from admin panel
+  const handleUpdateCommunity = async (updatedCommunity: Community) => {
+      try {
+          // Update the community in storage
+          const communityIndex = communities.findIndex(c => c.id === updatedCommunity.id);
+          if (communityIndex !== -1) {
+              const newCommunities = [...communities];
+              newCommunities[communityIndex] = updatedCommunity;
+              setCommunities(newCommunities);
+              
+              // Persist to storage
+              await StorageService.saveCommunity(updatedCommunity);
+              await refreshAllData();
+          }
+      } catch (error: any) {
+          console.error('Update community error:', error);
+          alert(`更新失败: ${error.message}`);
+      }
   };
+
+  // Handle community deletion from admin panel
+  const handleDeleteCommunity = async (communityId: string) => {
+      try {
+          if (window.confirm('确定要解散这个社区吗？此操作不可撤销。')) {
+              await StorageService.deleteCommunity(communityId);
+              await refreshAllData();
+              setActiveCommunityAdminPanel(null);
+              alert('社区已解散');
+          }
+      } catch (error: any) {
+          console.error('Delete community error:', error);
+          alert(`解散社区失败: ${error.message}`);
+      }
+  };
+
+
+
 
   const handleEditCoverClick = (demoId: string) => {
     setDemoIdToUpdateCover(demoId);
@@ -422,10 +477,12 @@ export default function App() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        StorageService.updateDemoCover(demoIdToUpdateCover, base64);
-        refreshAllData();
-        alert(t('coverUpdated'));
-        setDemoIdToUpdateCover(null);
+        StorageService.updateDemoCover(demoIdToUpdateCover, base64).then(() => {
+          refreshAllData().then(() => {
+            alert(t('coverUpdated'));
+            setDemoIdToUpdateCover(null);
+          });
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -433,22 +490,23 @@ export default function App() {
 
   // --- Views ---
 
-  const renderSidebar = () => (
-    <aside className="w-72 h-screen fixed left-0 top-0 pt-24 pb-6 border-r border-slate-200/60 glass-panel z-20 hidden md:flex flex-col overflow-hidden">
+  const renderSidebarContent = () => (
+    <>
       <div className="px-4 mb-6 shrink-0">
         <div className="bg-slate-100/80 p-1 rounded-xl flex mb-4 border border-slate-200">
-           <button 
-             onClick={() => { setLayer('general'); setActiveCommunityId(null); setView('explore'); }}
+           <button
+             onClick={() => { setLayer('general'); setActiveCommunityId(null); setView('explore'); setIsMobileSidebarOpen(false); }}
              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${layer === 'general' ? 'bg-white text-indigo-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}
            >
              <Globe className="w-3.5 h-3.5" />
              {t('layerGeneral')}
            </button>
-           <button 
-             onClick={() => { 
-                 setLayer('community'); 
+           <button
+             onClick={() => {
+                 setLayer('community');
                  if(activeCommunityId) setView('explore');
                  else setView('community_hall');
+                 setIsMobileSidebarOpen(false);
              }}
              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${layer === 'community' ? 'bg-white text-indigo-600 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-700'}`}
            >
@@ -460,11 +518,11 @@ export default function App() {
         {layer === 'community' && (
             <div className="space-y-3 animate-in slide-in-from-left-4 duration-300">
                 <div className="relative">
-                    <button 
-                        onClick={() => setIsJoinCodeModalOpen(true)}
+                    <button
+                        onClick={() => setIsCreateCommModalOpen(true)}
                         className="w-full mb-2 border border-dashed border-indigo-300 text-indigo-600 rounded-xl py-2.5 text-xs font-bold hover:bg-indigo-50/50 flex items-center justify-center gap-2 transition-colors"
                     >
-                        <KeyRound className="w-3.5 h-3.5" /> {t('joinByCode')}
+                        <Plus className="w-3.5 h-3.5" /> {t('createCommunity')}
                     </button>
                 </div>
 
@@ -498,6 +556,7 @@ export default function App() {
         )}
       </div>
 
+      {/* Hide category filter in admin view */}
       <div className="flex-1 overflow-y-auto px-4 custom-scrollbar border-t border-slate-100/80 pt-6">
         <div className="flex items-center justify-between mb-4 px-2 sticky top-0 z-20 pb-2">
            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('subjects')}</h3>
@@ -515,7 +574,7 @@ export default function App() {
         
         <nav className="space-y-1 pb-10">
           <button 
-            onClick={() => setActiveCategory('All')}
+            onClick={() => handleCategorySelect('All')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all ${activeCategory === 'All' ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' : 'text-slate-600 hover:bg-slate-50'}`}
           >
             <FolderOpen className={`w-4 h-4 ${activeCategory === 'All' ? 'text-indigo-600' : 'text-slate-400'}`} />
@@ -523,59 +582,137 @@ export default function App() {
           </button>
 
           {layer === 'general' ? (
-            Object.values(Subject).map(sub => (
-              <button 
-                key={sub}
-                onClick={() => setActiveCategory(sub)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all ${activeCategory === sub ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' : 'text-slate-600 hover:bg-slate-50'}`}
-              >
-                <SubjectIcon subject={sub} />
-                {t(sub.replace(' ','') as any || sub.toLowerCase() as any)}
-              </button>
-            ))
+            Object.values(Subject).map(sub => {
+              // Map Subject enum values to translation keys
+              const translationKey: any = {
+                'Physics': 'physics',
+                'Chemistry': 'chemistry',
+                'Mathematics': 'mathematics',
+                'Biology': 'biology',
+                'Computer Science': 'computerScience',
+                'Astronomy': 'astronomy',
+                'Earth Science': 'earthScience',
+                'Creative Tools': 'creativeTools'
+              }[sub] || sub.toLowerCase();
+              
+              return (
+                <button 
+                  key={sub}
+                  onClick={() => handleCategorySelect(sub)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all ${activeCategory === sub ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  <SubjectIcon subject={sub} />
+                  {t(translationKey)}
+                </button>
+              );
+            })
           ) : (
             <div className="mt-2 space-y-1">
                {rootCategories.length === 0 && (
-                 <div className="text-xs text-slate-400 px-4 py-2 italic">No categories yet.</div>
+                 <div className="text-xs text-slate-400 px-4 py-2 italic">{t('noCategoriesYet')}</div>
                )}
-               {rootCategories.map(cat => (
-                 <CategoryTreeNode 
-                   key={cat.id}
-                   category={cat}
-                   allCategories={categories}
-                   activeId={activeCategory}
-                   onSelect={setActiveCategory}
-                   onAddSub={openCategoryModal}
-                   onDelete={handleDeleteCategory}
-                   role={isCurrentCommunityAdmin ? 'community_admin' : 'user'}
-                 />
-               ))}
+              {rootCategories.map(cat => (
+                <CategoryTreeNode 
+                  key={cat.id}
+                  category={cat}
+                  allCategories={categories}
+                  activeId={activeCategory}
+                  onSelect={handleCategorySelect}
+                  onAddSub={openCategoryModal}
+                  onDelete={handleDeleteCategory}
+                  role={isCurrentCommunityAdmin ? 'community_admin' : 'user'}
+                  t={t}
+                />
+              ))}
             </div>
           )}
         </nav>
       </div>
-    </aside>
+    </>
+  );
+
+  const renderSidebar = () => (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="w-72 h-screen fixed left-0 top-0 pt-24 pb-6 border-r border-slate-200/60 glass-panel z-20 hidden md:flex flex-col overflow-hidden">
+        {renderSidebarContent()}
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
+            />
+            {/* Mobile Sidebar */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 h-screen w-[280px] bg-white/95 backdrop-blur-xl border-r border-slate-200/60 z-50 md:hidden flex flex-col overflow-hidden shadow-2xl"
+            >
+              {/* Mobile Sidebar Header */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden ${layer === 'general' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600'}`}>
+                    <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                  </div>
+                  <span className="font-bold text-slate-800">{t('appTitle')}</span>
+                </div>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+              {/* Mobile Sidebar Content */}
+              <div className="flex-1 overflow-y-auto pt-4 pb-6">
+                {renderSidebarContent()}
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 
   const renderTopbar = () => (
     <header className="fixed top-0 left-0 right-0 h-16 glass-panel border-b border-white/50 z-30 flex items-center justify-between px-4 md:px-6 shadow-sm">
-      <div className="flex items-center gap-4 md:gap-12">
+      <div className="flex items-center gap-3 md:gap-12">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="md:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5 text-slate-600" />
+        </button>
+
         <div className="flex items-center gap-3">
-           <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-md ${layer === 'general' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600'}`}>
-             <FlaskConical className="text-white w-5 h-5" />
+           <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-md overflow-hidden ${layer === 'general' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600'}`}>
+             <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
            </div>
-           <div>
-             <h1 className="text-lg font-bold text-slate-800 tracking-tight hidden sm:block leading-none">{t('appTitle')}</h1>
+           <div className="hidden sm:block">
+             <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">{t('appTitle')}</h1>
              <span className="text-[10px] font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-slate-500 to-slate-400">
                {layer === 'general' ? t('layerGeneral') : activeCommunity ? activeCommunity.name : t('layerCommunity')}
              </span>
            </div>
         </div>
-        
+
+        {/* Desktop search */}
         <div className="relative hidden lg:block w-96 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-500 transition-colors" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -585,7 +722,19 @@ export default function App() {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar">
-        <button 
+        {/* Mobile search button */}
+        <button
+          onClick={() => {
+            const query = prompt(t('searchPlaceholder') || 'Search demos...', searchQuery);
+            if (query !== null) setSearchQuery(query);
+          }}
+          className="lg:hidden p-2 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 shrink-0 transition-colors"
+          aria-label="Search"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+
+        <button
           onClick={() => setLanguage(l => l === 'en' ? 'cn' : 'en')}
           className="text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 shrink-0 transition-colors"
         >
@@ -593,21 +742,21 @@ export default function App() {
         </button>
 
         <nav className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-full border border-slate-200 shrink-0">
-          <button 
+          <button
              onClick={() => setView(layer === 'community' && !activeCommunityId ? 'community_hall' : 'explore')}
              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === 'explore' || view === 'community_hall' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             {layer === 'community' && !activeCommunityId ? t('communityHall') : t('explore')}
           </button>
-          
-          <button 
+
+          <button
              onClick={() => setView('bounties')}
              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === 'bounties' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             {t('bounties')}
           </button>
 
-          <button 
+          <button
              onClick={() => { setBountyContext(null); setView('upload'); }}
              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === 'upload' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
@@ -615,36 +764,129 @@ export default function App() {
           </button>
 
           {(role === 'general_admin' || (layer === 'community' && isCurrentCommunityAdmin)) && (
-            <button 
+            <button
               onClick={() => setView('admin')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${view === 'admin' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all relative ${view === 'admin' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
               {t('admin')}
+              {pendingDemos.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                  {pendingDemos.length > 9 ? '9+' : pendingDemos.length}
+                </span>
+              )}
             </button>
           )}
         </nav>
 
-        <div className="h-8 w-px bg-slate-200 mx-1"></div>
+        {/* Sort Selector - Only show in explore view */}
+        {(view === 'explore' || view === 'community_hall') && (
+          <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-full border border-slate-200 shrink-0">
+            <button
+              onClick={() => setSortBy('date')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${sortBy === 'date' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              title={t('sortByDate') || '按时间排序'}
+            >
+              {t('sortDate') || '最新'}
+            </button>
+            <button
+              onClick={() => setSortBy('likes')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${sortBy === 'likes' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              title={t('sortByLikes') || '按点赞排序'}
+            >
+              {t('sortLikes') || '热门'}
+            </button>
+          </div>
+        )}
 
-        <button 
-          onClick={() => setView('profile')}
-          className={`flex items-center gap-2 px-1.5 py-1.5 md:px-3 md:py-1.5 rounded-full text-xs font-bold transition-all border select-none shrink-0 cursor-pointer shadow-sm
-            ${role === 'user' ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-100 hover:shadow-md' : ''}
-            ${role === 'general_admin' ? 'bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 border-purple-100 hover:shadow-md' : ''}
-          `}
-        >
-          {role === 'user' && <UserCircle className="w-5 h-5 md:w-4 md:h-4" />}
-          {role === 'general_admin' && <ShieldCheck className="w-5 h-5 md:w-4 md:h-4" />}
-          <span className="hidden md:inline">
-            {role === 'user' ? t('roleUser') : t('roleGeneralAdmin')}
-          </span>
-        </button>
+        <div className="h-8 w-px bg-slate-200 mx-1 shrink-0"></div>
+
+        {/* Help Guide Button */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => {
+              window.open('https://wcnwkefpufkl.feishu.cn/wiki/ZsPaw4F0aiEDSskK4uvcn2aDnGc?from=from_copylink', '_blank');
+              setShowHelpTooltip(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border border-amber-200 hover:shadow-md transition-all"
+            title="查看使用指南"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span className="hidden sm:inline">指南</span>
+          </button>
+
+          {/* First Login Tooltip */}
+          {showHelpTooltip && isFirstLogin && (
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-amber-200 py-3 px-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">欢迎使用！</p>
+                  <p className="text-xs text-slate-600 mt-1">点击查看新手指南，快速了解如何使用本平台 🎉</p>
+                </div>
+              </div>
+              <div className="absolute -top-1.5 right-4 w-3 h-3 bg-white border-t border-l border-amber-200 transform rotate-45"></div>
+            </div>
+          )}
+        </div>
       </div>
+
+      <div className="relative ml-2 shrink-0">
+        <button
+          onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className={`flex items-center gap-2 px-1.5 py-1.5 md:px-3 md:py-1.5 rounded-full text-xs font-bold transition-all border select-none shrink-0 cursor-pointer shadow-sm
+              ${role === 'user' ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-100 hover:shadow-md' : ''}
+              ${role === 'general_admin' ? 'bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 border-purple-100 hover:shadow-md' : ''}
+            `}
+          >
+            {role === 'user' && <UserCircle className="w-5 h-5 md:w-4 md:h-4" />}
+            {role === 'general_admin' && <ShieldCheck className="w-5 h-5 md:w-4 md:h-4" />}
+            <span className="hidden md:inline">
+              {role === 'user' ? t('roleUser') : t('roleGeneralAdmin')}
+            </span>
+            <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
+          </button>
+
+          {isProfileMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden">
+               <div className="px-4 py-2 border-b border-slate-50 mb-1">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">{t('accessLevel')}</p>
+                  <p className="text-sm font-bold text-slate-700 truncate">{role === 'user' ? t('roleUser') : t('roleGeneralAdmin')}</p>
+               </div>
+               
+               <button 
+                  onClick={() => {
+                    if (role === 'general_admin') setView('admin');
+                    else setView('profile');
+                    setIsProfileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-2 transition-colors"
+               >
+                  {role === 'general_admin' ? <LayoutDashboard className="w-4 h-4 text-purple-500" /> : <UserCircle className="w-4 h-4 text-emerald-500" />}
+                  {role === 'general_admin' ? t('adminDashboard') : t('profileTitle')}
+               </button>
+
+               <div className="h-px bg-slate-100 my-1"></div>
+               
+               <button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsProfileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium flex items-center gap-2 transition-colors"
+               >
+                  <LogOut className="w-4 h-4" />
+                  {t('logout')}
+               </button>
+            </div>
+          )}
+        </div>
     </header>
   );
 
   const renderGallery = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 pb-20">
       {filteredDemos.map(demo => {
         const isGeneralAdmin = role === 'general_admin';
         const isDemoCommAdmin = demo.layer === 'community' && communities.find(c => c.id === demo.communityId)?.creatorId === currentUserId;
@@ -678,7 +920,12 @@ export default function App() {
               <span className={`w-1.5 h-1.5 rounded-full ${demo.layer === 'general' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></span>
               {demo.layer === 'general' ? demo.categoryId : communities.find(c => c.id === demo.communityId)?.name || t('layerCommunity')}
             </div>
-            {demo.bountyId && (
+            {demo.status === 'pending' && (
+               <div className="absolute top-4 right-4 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[10px] font-bold shadow-lg flex items-center gap-1">
+                 <Clock className="w-3 h-3" /> {t('pending')}
+               </div>
+            )}
+            {demo.bountyId && demo.status !== 'pending' && (
                <div className="absolute top-4 right-4 bg-amber-400 text-white px-3 py-1.5 rounded-full text-[10px] font-bold shadow-lg flex items-center gap-1">
                  <Award className="w-3 h-3" /> {t('bountySolution')}
                </div>
@@ -688,7 +935,7 @@ export default function App() {
           <div className="p-5 flex-1 flex flex-col pointer-events-none bg-white">
             <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">{demo.title}</h3>
             <p className="text-sm text-slate-500 mb-6 line-clamp-2 flex-1 leading-relaxed">{demo.description}</p>
-            
+
             <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                <div className="flex items-center gap-2.5">
                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[9px] text-white font-bold ring-2 ring-white">
@@ -696,9 +943,16 @@ export default function App() {
                  </div>
                  <span className="text-xs font-semibold text-slate-700 truncate max-w-[100px]">{demo.author}</span>
                </div>
-               <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md">
-                 {new Date(demo.createdAt).toLocaleDateString()}
-               </span>
+               <div className="flex items-center gap-3">
+                 {/* Like count */}
+                 <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md">
+                   <Heart className="w-3 h-3" />
+                   {demo.likeCount || 0}
+                 </span>
+                 <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md">
+                   {new Date(demo.createdAt).toLocaleDateString()}
+                 </span>
+               </div>
             </div>
           </div>
 
@@ -768,6 +1022,8 @@ export default function App() {
                   {approvedCommunities.map(c => {
                       const isMember = c.members.includes(currentUserId);
                       const isPending = c.pendingMembers.includes(currentUserId);
+                      const isCommunityAdmin = c.creatorId === currentUserId;
+                      const hasPendingRequests = c.pendingMembers.length > 0;
 
                       return (
                           <div key={c.id} className="glass-card rounded-2xl p-8 hover:-translate-y-1 transition-transform duration-300">
@@ -783,7 +1039,29 @@ export default function App() {
                               <p className="text-sm text-slate-500 mb-8 line-clamp-2 h-10 leading-relaxed">{c.description}</p>
                               
                               <div className="flex gap-3">
-                                  {isMember ? (
+                                  {/* Admin Panel Button - Only visible to community admin (regardless of membership) */}
+                                  {isCommunityAdmin ? (
+                                      <>
+                                          <button 
+                                              onClick={() => { setActiveCommunityId(c.id); setView('explore'); }}
+                                              className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                          >
+                                              {t('open')}
+                                          </button>
+                                          <button
+                                              onClick={() => setActiveCommunityAdminPanel(c.id)}
+                                              className="px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 relative"
+                                          >
+                                              <Settings className="w-4 h-4" />
+                                              管理
+                                              {hasPendingRequests && (
+                                                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                                      {c.pendingMembers.length > 9 ? '9+' : c.pendingMembers.length}
+                                                  </span>
+                                              )}
+                                          </button>
+                                      </>
+                                  ) : isMember ? (
                                       <button 
                                           onClick={() => { setActiveCommunityId(c.id); setView('explore'); }}
                                           className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
@@ -993,10 +1271,15 @@ export default function App() {
                     {pendingDemos.map(d => (
                         <div key={d.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${d.layer === 'general' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                         {d.layer}
                                     </span>
+                                    {d.layer === 'community' && d.communityId && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">
+                                            {communities.find(c => c.id === d.communityId)?.name || 'Unknown Community'}
+                                        </span>
+                                    )}
                                     <span className="text-xs text-slate-400">{new Date(d.createdAt).toLocaleDateString()}</span>
                                 </div>
                                 <h4 className="font-bold text-slate-800 text-lg">{d.title}</h4>
@@ -1052,7 +1335,8 @@ export default function App() {
                     {activeCommunity.members.map(uid => (
                         <div key={uid} className="px-6 py-3 flex items-center justify-between">
                             <span className="text-sm font-medium text-slate-600">{uid} {uid === currentUserId ? '(You)' : ''}</span>
-                            {uid !== currentUserId && (
+                            {/* Only creator can kick members */}
+                            {uid !== currentUserId && activeCommunity.creatorId === currentUserId && (
                                 <button 
                                     onClick={() => handleManageMember(activeCommunity.id, uid, 'kick')}
                                     className="text-xs text-red-400 hover:text-red-600 font-bold"
@@ -1102,8 +1386,68 @@ export default function App() {
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('contributions')}</h4>
                   <div className="flex items-center gap-2">
                       <FlaskConical className="w-5 h-5 text-indigo-500" />
-                      <span className="font-bold text-slate-700">{demos.filter(d => d.author === currentUserId || d.author === 'Dr. Newton').length} Demos</span>
+                      <span className="font-bold text-slate-700">
+                        {demos.filter(d => d.author === currentUserId).length} Demos
+                        {demos.filter(d => d.author === currentUserId && d.status === 'pending').length > 0 && (
+                          <span className="ml-2 text-xs text-amber-600">
+                            ({demos.filter(d => d.author === currentUserId && d.status === 'pending').length} {t('pending')})
+                          </span>
+                        )}
+                      </span>
                   </div>
+              </div>
+          </div>
+
+          {/* My Uploads Section */}
+          <div>
+              <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-slate-800">My Uploads</h3>
+              </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  {demos.filter(d => d.author === currentUserId).length === 0 ? (
+                      <div className="p-12 text-center text-slate-400">
+                          No uploads yet. Start sharing your work!
+                      </div>
+                  ) : (
+                      <div className="divide-y divide-slate-100">
+                          {demos.filter(d => d.author === currentUserId).map(demo => (
+                              <div key={demo.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-4">
+                                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                                          <SubjectIcon subject={demo.categoryId} />
+                                      </div>
+                                      <div>
+                                          <h4 className="font-bold text-slate-800">{demo.title}</h4>
+                                          <p className="text-xs text-slate-500">{new Date(demo.createdAt).toLocaleDateString()}</p>
+                                      </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                      {demo.status === 'pending' && (
+                                          <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
+                                              {t('pending')}
+                                          </span>
+                                      )}
+                                      {demo.status === 'published' && (
+                                          <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">
+                                              {t('approved')}
+                                          </span>
+                                      )}
+                                      {demo.status === 'rejected' && (
+                                          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold" title={demo.rejectionReason}>
+                                              {t('rejected')}
+                                          </span>
+                                      )}
+                                      <button 
+                                          onClick={() => setSelectedDemo(demo)}
+                                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                      >
+                                          <Search className="w-4 h-4" />
+                                      </button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
               </div>
           </div>
 
@@ -1162,7 +1506,7 @@ export default function App() {
 
   // --- Auth Gate ---
   if (!isLoggedIn) {
-    return <LoginScreen t={t} onLogin={handleLogin} lang={language} setLang={setLanguage} />;
+    return <AuthPage onLogin={handleLogin} t={t} />;
   }
 
   return (
@@ -1171,8 +1515,8 @@ export default function App() {
       
       {renderTopbar()}
       {renderSidebar()}
-      
-      <main className="pt-24 pb-12 px-4 md:px-10 md:pl-80 w-full transition-all duration-300 relative z-10">
+
+      <main className="pt-20 md:pt-24 pb-24 md:pb-20 px-3 sm:px-4 md:px-10 md:pl-80 w-full transition-all duration-300 relative z-10">
         <div className="w-full max-w-[1400px] mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
@@ -1202,6 +1546,19 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Community Admin Panel Modal */}
+      {activeCommunityAdminPanel && (
+        <CommunityAdminPanel
+          community={communities.find(c => c.id === activeCommunityAdminPanel)!}
+          currentUserId={currentUserId}
+          onClose={() => setActiveCommunityAdminPanel(null)}
+          onUpdateCommunity={handleUpdateCommunity}
+          onDeleteCommunity={handleDeleteCommunity}
+          onManageMember={handleManageMember}
+          t={t}
+        />
+      )}
 
       {/* Modals and AI Widget remain the same in logic, UI inherits global styles */}
       <CreateBountyModal 
@@ -1283,75 +1640,22 @@ export default function App() {
       )}
 
       {/* ... Floating AI Widget ... */}
-      <div className="fixed bottom-8 right-8 z-40 flex flex-col items-end gap-4">
-        <AnimatePresence>
-          {isChatOpen && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-white/50 overflow-hidden flex flex-col max-h-[500px]"
-            >
-              <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="font-bold text-sm tracking-wide">{t('aiChatTitle')}</span>
-                </div>
-                <button onClick={() => setIsChatOpen(false)}><X className="w-4 h-4 opacity-70 hover:opacity-100" /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 min-h-[300px]">
-                {chatMessages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                      msg.role === 'user' 
-                        ? 'bg-indigo-600 text-white rounded-br-none' 
-                        : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'
-                    }`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                {isAiLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-bl-none shadow-sm">
-                      <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
-                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.1s]" />
-                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white border-t border-slate-100">
-                <div className="flex gap-2">
-                  <input 
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all"
-                    placeholder={t('aiChatPlaceholder')}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAiSend()}
-                  />
-                  <button 
-                    onClick={handleAiSend}
-                    disabled={isAiLoading}
-                    className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-md shadow-indigo-200 transition-all"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
-        <button 
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className="w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-full shadow-2xl hover:shadow-indigo-500/30 hover:scale-105 transition-all flex items-center justify-center border border-slate-700"
-        >
-          {isChatOpen ? <X className="w-6 h-6" /> : <Sparkles className="w-6 h-6 text-indigo-300" />}
-        </button>
-      </div>
+      <AiChatWidget 
+        t={t} 
+        language={language}
+        onOpenDemo={(demoId) => {
+          console.log('App: Looking for demo:', demoId);
+          const demo = demos.find(d => d.id === demoId);
+          if (demo) {
+            setSelectedDemo(demo);
+          } else {
+            console.error('App: Demo not found:', demoId);
+            alert(`演示程序 "${demoId}" 不存在。这可能是AI产生了幻觉。请尝试其他关键词或浏览探索页面。`);
+          }
+        }}
+        isOpen={isChatOpen}
+        setIsOpen={setIsChatOpen}
+      />
       
       {/* Hidden File Input for Cover Update */}
       <input 
@@ -1364,13 +1668,53 @@ export default function App() {
 
       <AnimatePresence>
         {selectedDemo && (
-          <DemoPlayer 
-            demo={selectedDemo} 
-            onClose={() => setSelectedDemo(null)} 
+          <DemoPlayer
+            demo={selectedDemo}
+            onClose={() => setSelectedDemo(null)}
             t={t}
+            onOpenDemo={(demoId) => {
+              console.log('DemoPlayer onOpenDemo:', demoId);
+              console.log('Available demos:', demos.length);
+              const demo = demos.find(d => d.id === demoId);
+              console.log('Found demo:', demo);
+              if (demo) {
+                setSelectedDemo(demo);
+              } else {
+                console.error('Demo not found:', demoId);
+              }
+            }}
+            onLikeChange={(demoId, newLikeCount, newUserLiked) => {
+              // Update the demos array with new like count
+              setDemos(prevDemos =>
+                prevDemos.map(d =>
+                  d.id === demoId
+                    ? { ...d, likeCount: newLikeCount, userLiked: newUserLiked }
+                    : d
+                )
+              );
+              // Also update selectedDemo if it's the same demo
+              setSelectedDemo(prev =>
+                prev && prev.id === demoId
+                  ? { ...prev, likeCount: newLikeCount, userLiked: newUserLiked }
+                  : prev
+              );
+            }}
           />
         )}
       </AnimatePresence>
+
+      {/* Footer - appears when scrolled to bottom */}
+      <footer className="py-6 px-4 md:pl-80 w-full">
+        <div className="max-w-[1400px] mx-auto flex justify-center items-center">
+          <div className="group relative cursor-pointer">
+            <p className="text-xs text-slate-400 font-medium group-hover:text-slate-600 transition-colors">@构建团队</p>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Built by Kyra,兰海粟,Vincent,Lloyd
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -68,6 +68,8 @@ export interface Demo {
   createdAt: number;
   rejectionReason?: string;
   bountyId?: string; // Optional link to a bounty task
+  likeCount?: number; // Number of likes (optional, populated on demand)
+  userLiked?: boolean; // Whether current user has liked this demo
 }
 
 export interface ChatMessage {

@@ -3,6 +3,18 @@ import React, { useState } from 'react';
 import { ChevronRight, ChevronDown, Folder, Plus, Trash2 } from 'lucide-react';
 import { Category, UserRole } from '../types';
 
+type CategoryTreeNodeProps = {
+  category: Category;
+  allCategories: Category[];
+  activeId: string;
+  onSelect: (id: string) => void;
+  onAddSub: (parentId: string) => void;
+  onDelete: (id: string) => void;
+  role: UserRole | 'community_admin';
+  t: any;
+  key?: string | number;
+};
+
 export const CategoryTreeNode = ({ 
   category, 
   allCategories, 
@@ -10,23 +22,16 @@ export const CategoryTreeNode = ({
   onSelect, 
   onAddSub, 
   onDelete,
-  role 
-}: { 
-  category: Category, 
-  allCategories: Category[], 
-  activeId: string, 
-  onSelect: (id: string) => void,
-  onAddSub: (parentId: string) => void,
-  onDelete: (id: string) => void,
-  role: UserRole | 'community_admin'
-}) => {
+  role,
+  t
+}: CategoryTreeNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const children = allCategories.filter(c => c.parentId === category.id);
   const isActive = activeId === category.id;
   const hasChildren = children.length > 0;
   
-  // PERMISSIONS: Only Community Admin should edit the Community Category Tree
-  const canEdit = role === 'community_admin';
+  // PERMISSIONS: General Admin and Community Admin can edit the Category Tree
+  const canEdit = role === 'general_admin' || role === 'community_admin';
 
   const handleStopPropagation = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -77,7 +82,7 @@ export const CategoryTreeNode = ({
                 onAddSub(category.id); 
                 setIsExpanded(true); 
               }}
-              title="Add Sub-category"
+              title={t('addSubCategory')}
               className="p-1.5 hover:p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-100 rounded transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -88,7 +93,7 @@ export const CategoryTreeNode = ({
                 handleStopPropagation(e);
                 onDelete(category.id); 
               }}
-              title="Delete Category"
+              title={t('deleteCategory')}
               className="p-1.5 hover:p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-200 rounded transition-all cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
@@ -101,15 +106,16 @@ export const CategoryTreeNode = ({
       {isExpanded && children.length > 0 && (
         <div className="border-l border-slate-200 ml-2.5 my-1">
           {children.map(child => (
-            <CategoryTreeNode 
-              key={child.id} 
-              category={child} 
-              allCategories={allCategories} 
+            <CategoryTreeNode
+              key={child.id}
+              category={child}
+              allCategories={allCategories}
               activeId={activeId}
               onSelect={onSelect}
               onAddSub={onAddSub}
               onDelete={onDelete}
               role={role}
+              t={t}
             />
           ))}
         </div>
