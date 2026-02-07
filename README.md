@@ -1,6 +1,6 @@
-# Sci-Demo Hub (科学演示集市)
+# Tomorrow.AI 学习平台
 
-Sci-Demo Hub 是一个双语（中/英）高端教育平台，专为交互式科学演示而设计。它具有"数字实验室"的美学风格、用于物理/数学模拟的代码沙盒以及 AI 助手框架。
+Tomorrow.AI 学习平台是一个双语（中/英）高端教育平台，专为交互式科学演示而设计。它具有"数字实验室"的美学风格、用于物理/数学模拟的代码沙盒以及 AI 助手框架。
 
 ## 🚀 快速开始
 
@@ -50,7 +50,7 @@ npm run dev
 ## 📁 项目结构
 
 ```
-sci-demo-hub/
+Tomorrow.AI/
 ├── App.tsx                    # 主 UI 逻辑
 ├── types.ts                   # TypeScript 类型定义
 ├── constants.ts               # 翻译字典和种子数据
